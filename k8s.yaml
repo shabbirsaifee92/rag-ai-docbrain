@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rag-app-config
+  namespace: local-llm
+data:
+  CHUNK_SIZE: "1000"
+  CHUNK_OVERLAP: "200"
+  EMBEDDINGS_MODEL: "all-MiniLM-L6-v2"
+  K_DOCUMENTS: "3"
+  LLM_BASE_URL: "http://localai:8080"  # Update this to your LLM service name
+  LLM_MODEL_NAME: "mistral-7b-instruct-v0.2.Q4_K_M.gguf"
+  TEMPERATURE: "0.2"
+  TOP_P: "0.9"
+  MAX_TOKENS: "2048"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-app
+  namespace: local-llm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rag-app
+  template:
+    metadata:
+      labels:
+        app: rag-app
+    spec:
+      containers:
+      - name: rag-app
+        image: katunstablescratch.azurecr.io/docbrain:latest
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: rag-app-config
+        volumeMounts:
+        - name: vector-store
+          mountPath: /app/chroma_db
+        - name: models-volume
+          mountPath: /models
+      volumes:
+      - name: vector-store
+        persistentVolumeClaim:
+          claimName: vector-store-pvc
+      - name: models-volume
+        persistentVolumeClaim:
+          claimName: models-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-app-service
+  namespace: local-llm
+spec:
+  selector:
+    app: rag-app
+  ports:
+  - port: 80
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vector-store-pvc
+  namespace: local-llm
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

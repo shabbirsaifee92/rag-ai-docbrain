@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: model-downloader
+  namespace: local-llm
+spec:
+  template:
+    spec:
+      containers:
+      - name: downloader
+        image: python:3.9-slim
+        command:
+        - /bin/bash
+        - -c
+        - |
+          export HF_ENDPOINT=https://hf-mirror.com
+          apt-get update && apt-get install -y git
+          pip install --no-cache-dir sentence-transformers
+          pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+          python3 -c "
+          from sentence_transformers import SentenceTransformer
+          model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', cache_folder='/models')
+          print('Model downloaded successfully')
+          "
+        volumeMounts:
+        - name: models-volume
+          mountPath: /models
+      restartPolicy: Never
+      volumes:
+      - name: models-volume
+        persistentVolumeClaim:
+          claimName: models-pvc
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: models-pvc
+  namespace: local-llm
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
