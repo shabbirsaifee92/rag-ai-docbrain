@@ -13,8 +13,8 @@ class DocumentProcessor:
         )
 
     def load_and_split(self):
-        print(f"Loading document from: {self.docs_dir}/product_docs.md")
-        loader = TextLoader(f"{self.docs_dir}/product_docs.md")
+        print(f"Loading document from: {self.docs_dir}/sox.md")
+        loader = TextLoader(f"{self.docs_dir}/sox.md")
         documents = loader.load()
         print(f"Found {len(documents)} documents")
 

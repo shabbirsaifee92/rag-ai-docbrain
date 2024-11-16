@@ -15,4 +15,4 @@ COPY ./docs .
 
 EXPOSE 8000
 
-CMD ["python", "test.py"]
+CMD ["python", "main.py"]
