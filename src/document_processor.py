@@ -2,8 +2,6 @@ import re
 from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from config import settings
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
 
 class DocumentProcessor:
     def __init__(self, docs_dir: str = "/app"):
@@ -58,6 +56,7 @@ class DocumentProcessor:
         """
         Extract metadata dynamically, such as section titles or headers.
         """
+        # Match headers with Markdown-style formatting
         match_h2 = re.search(r'##\s*(.*)', text)  # Secondary header
         match_h3 = re.search(r'###\s*(.*)', text)  # Tertiary header
 
@@ -77,9 +76,8 @@ class DocumentProcessor:
         unique_chunks = []
 
         for chunk in chunks:
-            normalized_content = chunk.page_content.strip().lower()
-            if normalized_content not in seen_contents:
-                seen_contents.add(normalized_content)
+            if chunk.page_content not in seen_contents:
+                seen_contents.add(chunk.page_content)
                 unique_chunks.append(chunk)
 
         print(f"Reduced to {len(unique_chunks)} unique chunks.")
@@ -87,30 +85,24 @@ class DocumentProcessor:
 
     def retrieve_chunks(self, query, vector_db):
         """
-        Retrieve relevant chunks based on query, re-rank by semantic similarity.
+        Retrieve relevant chunks based on query, without relying on keywords.
         """
         # Convert the query into an embedding
         query_embedding = vector_db.embed_query(query)
 
-        # Retrieve initial chunks based on similarity search
+        # Retrieve top-k chunks based on semantic similarity
         print("Searching for relevant chunks...")
         retrieved_chunks = vector_db.similarity_search(
             query_embedding=query_embedding,
-            k=10  # Get more results to re-rank later
+            k=5  # Number of top results
         )
 
-        # Re-rank chunks based on cosine similarity
-        chunk_embeddings = [vector_db.embed_text(chunk.page_content) for chunk in retrieved_chunks]
-        similarities = cosine_similarity([query_embedding], chunk_embeddings)[0]
-        ranked_indices = np.argsort(similarities)[::-1]
-        ranked_chunks = [retrieved_chunks[i] for i in ranked_indices[:5]]  # Top 5
-
         # Debug: Log retrieved chunks and metadata
-        for chunk in ranked_chunks:
+        for chunk in retrieved_chunks:
             print(f"Retrieved Chunk: {chunk.page_content[:100]}...")
             print(f"Metadata: {chunk.metadata}")
 
-        return ranked_chunks
+        return retrieved_chunks
 
     def test_complex_query(self, query, vector_db):
         """
