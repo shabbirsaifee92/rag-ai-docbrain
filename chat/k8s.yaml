@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat
+  namespace: local-llm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat
+  template:
+    metadata:
+      labels:
+        app: chat
+    spec:
+      containers:
+      - name: chat
+        image: katunstablescratch.azurecr.io/chat:latest
+        ports:
+        - containerPort: 8501
+        env:
+        - name: BACKEND_URL
+          value: "http://rag-app-service.local-llm"  # Internal service name
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat
+  namespace: local-llm
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8501
+    targetPort: 8501
+  selector:
+    app: chat
