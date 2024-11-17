@@ -4,8 +4,8 @@ metadata:
   name: rag-app-config
   namespace: local-llm
 data:
-  CHUNK_SIZE: "1000"
-  CHUNK_OVERLAP: "200"
+  CHUNK_SIZE: "500"
+  CHUNK_OVERLAP: "100"
   EMBEDDINGS_MODEL: "all-MiniLM-L6-v2"
   K_DOCUMENTS: "3"
   LLM_BASE_URL: "http://localai:8080"  # Update this to your LLM service name
